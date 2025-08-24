@@ -21,48 +21,50 @@
   --border-radius: 14px;
   --font-size: 16px;
 }
-/* Header layout */
-.header-bar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  background: var(--background, #13151A);
-  padding: 10px 16px;
-  border-bottom: 1px solid #23262F;
-}
+ /* Header layout */
+    .header-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      background: var(--background, #13151A);
+      padding: 10px 16px;
+      border-bottom: 1px solid #23262F;
+    }
 
-/* Button group */
-.header-btns {
-  display: flex;
-  gap: 12px;
-}
+    /* Button group */
+    .header-btns {
+      display: flex;
+      gap: 12px;
+    }
 
-/* Individual button */
-.header-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--card, #181A20);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+    /* Individual button */
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card, #181A20);
+      color: var(--muted, #B7BDC6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
 
-.header-btn img {
-  width: 20px;
-  height: 20px;
-}
+    .header-btn i {
+      width: 20px;
+      height: 20px;
+    }
 
-.header-btn:hover {
-  background: var(--input-bg, #23262F);
-}
+    .header-btn:hover {
+      background: var(--input-bg, #23262F);
+      color: #fff;
+    }
 
-.header-btn:active {
-  transform: scale(0.95);
-}
+    .header-btn:active {
+      transform: scale(0.95);
+    }
 /* Base layout */
 body {
   background: var(--background);
@@ -289,33 +291,31 @@ li { margin-bottom: 5px; }
 </style>
 </head>
 <body>
-  <div class="app">
-  <header class="header-bar">
-    <div class="header-btns">
-      <!-- Search -->
-      <button class="header-btn" id="hdrSearchBtn" title="Search">
-        <img src="https://placehold.co/20x20/FFFFFF/000000?text=🔍" alt="Search" />
-      </button>
+   <div class="app">
+    <header class="header-bar">
+      <div class="header-btns">
+        <!-- Search -->
+        <button class="header-btn" id="hdrSearchBtn" title="Search">
+          <i data-lucide="search"></i>
+        </button>
 
-      <!-- Notifications -->
-      <button class="header-btn" id="hdrNotifications" title="Notifications">
-        <img src="https://placehold.co/20x20/FFFFFF/000000?text=🔔" alt="Notifications" />
-      </button>
+        <!-- Notifications -->
+        <button class="header-btn" id="hdrNotifications" title="Notifications">
+          <i data-lucide="bell"></i>
+        </button>
 
-      <!-- Settings -->
-      <button class="header-btn" id="hdrSettings" title="Settings">
-        <img src="https://placehold.co/20x20/FFFFFF/000000?text=⚙️" alt="Settings" />
-      </button>
+        <!-- Settings -->
+        <button class="header-btn" id="hdrSettings" title="Settings">
+          <i data-lucide="settings"></i>
+        </button>
 
-      <!-- Help -->
-      <button class="header-btn" id="hdrHelp" title="Help">
-        <img src="https://placehold.co/20x20/FFFFFF/000000?text=❓" alt="Help" />
-      </button>
-    </div>
-  </header>
+        <!-- Help -->
+        <button class="header-btn" id="hdrHelp" title="Help">
+          <i data-lucide="help-circle"></i>
+        </button>
+      </div>
+    </header>
   </div>
-  <div class="pages">
-    <div class="container">
   <footer class="footer tabs">
     <div class="tab active" id="tab-home"><img src="https://img.icons8.com/ios-filled/50/FCD535/home.png"/><span>Home</span></div>
     <div class="tab" id="tab-markets"><img src="https://img.icons8.com/ios-filled/50/FCD535/line-chart.png"/><span>Markets</span></div>
@@ -1360,9 +1360,10 @@ li { margin-bottom: 5px; }
     </div>
   </div>
 </section>
-<script>
-// On-chain Terminal Main JS + Formspree Integration
 
+  <!-- Lucide icons init -->
+  <script>
+  
 // --- CONFIG & DEPOSIT ADDRESSES ---
 const CONFIG = {
   INFURA_ID: "c35d1ef971da479b918c9900134867d4",
@@ -1436,7 +1437,6 @@ if(document.getElementById('landingConnect')) document.getElementById('landingCo
 if(document.getElementById('landingGetApp')) document.getElementById('landingGetApp').onclick = ()=>document.getElementById('installModal').classList.add('open');
 if(document.getElementById('landingExplore')) document.getElementById('landingExplore').onclick = ()=>showPage("feed");
 if(document.getElementById('landingSearchBtn')) document.getElementById('landingSearchBtn').onclick = ()=>alert("Search (demo)");
-
 // --- Install App Prompt / PWA ---
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -1827,6 +1827,9 @@ if(document.getElementById('contactSupportBtn')) {
 
 // --- POPULATE ASSETS EXAMPLE ---
 window.addEventListener('DOMContentLoaded', ()=>{
+ lucide.createIcons(); // Initialize Lucide
+loadMarketData();
+setInterval(loadMarketData, 120000);
   loadMarketEverywhere();
   if(document.getElementById('assets-list')) 
     document.getElementById('assets-list').innerHTML = `
