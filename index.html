@@ -9,8 +9,8 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <link rel="stylesheet" href="app.css" />
-<Style>
-:root {
+<style>
+      :root {
   --card: #181A20;
   --background: #13151A;
   --accent: #FCD535;
@@ -247,6 +247,7 @@ li { margin-bottom: 5px; }
 <div class="app">
   <header>
     <div class="header-btns">
+    <div class="header-btns">
       <button class="header-btn" id="hdrSearchBtn" title="Search">
         <img src="https://placehold.co/28x28/333333/FFFFFF?text=S" alt="Search" style="width:22px;"/>
       </button>
@@ -254,10 +255,26 @@ li { margin-bottom: 5px; }
       <button class="header-btn" id="hdrSettings" title="Settings">⚙️</button>
       <button class="header-btn" id="hdrHelp" title="Help">❓</button>
     </div>
-  </header>
-
+ </header>
   <div class="pages">
- <div class="container">
+    <div class="container">
+  <footer class="footer tabs">
+    <div class="tab active" id="tab-home"><img src="https://img.icons8.com/ios-filled/50/FCD535/home.png"/><span>Home</span></div>
+    <div class="tab" id="tab-markets"><img src="https://img.icons8.com/ios-filled/50/FCD535/line-chart.png"/><span>Markets</span></div>
+    <div class="tab" id="tab-trade"><img src="https://img.icons8.com/ios-filled/50/FCD535/swap.png"/><span>Trade</span></div>
+    <div class="tab" id="tab-wallets"><img src="https://img.icons8.com/ios-filled/50/FCD535/wallet.png"/><span>Wallets</span></div>
+    <div class="tab" id="tab-settings"><img src="https://img.icons8.com/ios-filled/50/FCD535/settings.png"/><span>Settings</span></div>
+  </footer>
+  <!-- Modal for Install (if needed) -->
+  <div id="installModal" class="modal">
+    <div class="modal-content card">
+      <div class="card-title">Install App</div>
+      <div>Install this app on your device for quick access.</div>
+      <button class="btn btn-success btn-block" id="installAppBtn">Install</button>
+      <button class="btn btn-block" id="closeInstallModal">Cancel</button>
+    </div>
+  </div>
+</div>
 
       <!-- 1A. LANDING PAGE -->
       <section id="page-landing" class="page active">
@@ -1282,24 +1299,7 @@ li { margin-bottom: 5px; }
       <button class="btn btn-block" id="btn-faqsupport">FAQ</button>
     </div>
   </div>
-
-  <footer class="footer tabs">
-    <div class="tab active" id="tab-home"><img src="https://img.icons8.com/ios-filled/50/FCD535/home.png"/><span>Home</span></div>
-    <div class="tab" id="tab-markets"><img src="https://img.icons8.com/ios-filled/50/FCD535/line-chart.png"/><span>Markets</span></div>
-    <div class="tab" id="tab-trade"><img src="https://img.icons8.com/ios-filled/50/FCD535/swap.png"/><span>Trade</span></div>
-    <div class="tab" id="tab-wallets"><img src="https://img.icons8.com/ios-filled/50/FCD535/wallet.png"/><span>Wallets</span></div>
-    <div class="tab" id="tab-settings"><img src="https://img.icons8.com/ios-filled/50/FCD535/settings.png"/><span>Settings</span></div>
-  </footer>
-  <!-- Modal for Install (if needed) -->
-  <div id="installModal" class="modal">
-    <div class="modal-content card">
-      <div class="card-title">Install App</div>
-      <div>Install this app on your device for quick access.</div>
-      <button class="btn btn-success btn-block" id="installAppBtn">Install</button>
-      <button class="btn btn-block" id="closeInstallModal">Cancel</button>
-    </div>
-  </div>
-</div>
+</section>
 <script>
 // On-chain Terminal Main JS + Formspree Integration
 
