@@ -21,7 +21,48 @@
   --border-radius: 14px;
   --font-size: 16px;
 }
+/* Header layout */
+.header-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background: var(--background, #13151A);
+  padding: 10px 16px;
+  border-bottom: 1px solid #23262F;
+}
 
+/* Button group */
+.header-btns {
+  display: flex;
+  gap: 12px;
+}
+
+/* Individual button */
+.header-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card, #181A20);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-btn img {
+  width: 20px;
+  height: 20px;
+}
+
+.header-btn:hover {
+  background: var(--input-bg, #23262F);
+}
+
+.header-btn:active {
+  transform: scale(0.95);
+}
 /* Base layout */
 body {
   background: var(--background);
@@ -173,29 +214,33 @@ input:focus, select:focus, textarea:focus { border: 1.5px solid var(--accent); }
 .asset-actions { display: flex; gap: 7px; }
 
 /* Coin Cards */
-.coins-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(112px,1fr));
-  gap: 13px;
-  margin: 14px 0 0 0;
+.market-title, .top-coins-title { 
+  margin: 20px 0 10px; 
+  font-weight: bold; 
+  font-size: 18px; 
+  color: #fff; 
 }
-.coin-card {
-  background: var(--input-bg);
-  border-radius: 10px;
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border: 1px solid #23262F;
-}
-.coin-img { width: 30px; height: 30px; }
-.coin-name { font-weight: 700; margin-top: 4px; }
-.coin-symbol { color: var(--accent); font-size: 0.93em; }
-.coin-price { font-size: 1.03em; margin-top: 4px; }
-.coin-change { font-weight: 700; margin-top: 2px; }
-.coin-change.up { color: var(--success);}
-.coin-change:not(.up) { color: var(--danger);}
 
+.coins-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px; 
+}
+
+.coin-row { 
+  display: flex; 
+  justify-content: space-between; 
+  font-size: 15px; 
+  padding: 6px 0; 
+  border-bottom: 1px solid rgba(255,255,255,0.1); 
+  color: #fff; 
+}
+
+.coin-symbol { font-weight: 600; width: 60px; }
+.coin-price { flex: 1; text-align: right; color: var(--muted, #B7BDC6); }
+.coin-change { width: 60px; text-align: right; font-weight: 500; }
+.text-green { color: var(--success, #0ECB81); }
+.text-red { color: var(--danger, #F6465D); }
 /* Order Book & Panel */
 .orderbook-box {
   background: var(--input-bg);
@@ -244,18 +289,31 @@ li { margin-bottom: 5px; }
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
+  <div class="app">
+  <header class="header-bar">
     <div class="header-btns">
-    <div class="header-btns">
+      <!-- Search -->
       <button class="header-btn" id="hdrSearchBtn" title="Search">
-        <img src="https://placehold.co/28x28/333333/FFFFFF?text=S" alt="Search" style="width:22px;"/>
+        <img src="https://placehold.co/20x20/FFFFFF/000000?text=🔍" alt="Search" />
       </button>
-      <button class="header-btn" id="hdrNotifications" title="Notifications">🔔</button>
-      <button class="header-btn" id="hdrSettings" title="Settings">⚙️</button>
-      <button class="header-btn" id="hdrHelp" title="Help">❓</button>
+
+      <!-- Notifications -->
+      <button class="header-btn" id="hdrNotifications" title="Notifications">
+        <img src="https://placehold.co/20x20/FFFFFF/000000?text=🔔" alt="Notifications" />
+      </button>
+
+      <!-- Settings -->
+      <button class="header-btn" id="hdrSettings" title="Settings">
+        <img src="https://placehold.co/20x20/FFFFFF/000000?text=⚙️" alt="Settings" />
+      </button>
+
+      <!-- Help -->
+      <button class="header-btn" id="hdrHelp" title="Help">
+        <img src="https://placehold.co/20x20/FFFFFF/000000?text=❓" alt="Help" />
+      </button>
     </div>
- </header>
+  </header>
+  </div>
   <div class="pages">
     <div class="container">
   <footer class="footer tabs">
@@ -327,13 +385,15 @@ li { margin-bottom: 5px; }
           <button class="feature-btn" data-target="lite">Lite Mode</button>
           <button class="feature-btn" data-target="pro">Pro Mode</button>
         </div>
-        <div class="market-section">
-          <div class="market-title">Market Overview</div>
-          <div id="marketOverview" class="market-overview"></div>
-        </div>
-        <div class="top-coins-title">Top Coins</div>
-        <div id="topCoins" class="coins-grid"></div>
-      </section>
+      
+      <div class="market-section">
+    <div class="market-title">Market Overview</div>
+    <div id="marketOverview" class="market-overview"></div>
+  </div>
+
+  <div class="top-coins-title">Top Coins</div>
+  <div id="topCoins" class="coins-list"></div>
+ </section>
       <!-- 1B. WALLET CONNECT -->
       <section id="page-wallets" class="page">
         <div class="card">
