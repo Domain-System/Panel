@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>On-chain Terminal</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600,700,800&display=swap" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <link rel="stylesheet" href="app.css" />
+<Style>
+:root {
+  --card: #181A20;
+  --background: #13151A;
+  --accent: #FCD535;
+  --muted: #B7BDC6;
+  --danger: #F6465D;
+  --success: #0ECB81;
+  --input-bg: #23262F;
+  --border-radius: 14px;
+  --font-size: 16px;
+}
+
+/* Base layout */
+body {
+  background: var(--background);
+  color: #f1f2f6;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: var(--font-size);
+  margin: 0;
+  padding: 0;
+}
+.page {
+  display: none;
+  padding: 0;
+  margin: 0;
+}
+.page.active {
+  display: block;
+  animation: fadein .3s;
+}
+@keyframes fadein { from {opacity: 0;} to {opacity: 1;} }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 12px #0003;
+  padding: 18px 14px 14px 14px;
+  margin: 18px auto;
+  max-width: 460px;
+  width: 100%;
+  border: 1px solid #23262F;
+}
+.card-title {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+.card-section {
+  margin-top: 18px;
+}
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 0.93em; }
+
+/* Buttons */
+.btn, .btn-block, .btn-sm {
+  background: var(--input-bg);
+  color: #f1f2f6;
+  border-radius: 10px;
+  border: none;
+  padding: 10px 16px;
+  margin: 4px 2px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s;
+  outline: none;
+}
+.btn-block { width: 100%; display: block; }
+.btn-sm { font-size: 0.93em; padding: 7px 10px; }
+.btn-success { background: var(--success); color: #181A20; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-secondary { background: var(--accent); color: #181A20; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+.btn:active, .btn:hover, .btn-block:active, .btn-block:hover { background: var(--accent); color: #181A20; }
+
+/* Inputs */
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border-radius: 10px;
+  border: 1px solid #23262F;
+  font-size: 1em;
+  color: #f1f2f6;
+  margin: 6px 0 10px 0;
+  outline: none;
+  box-sizing: border-box;
+}
+input:focus, select:focus, textarea:focus { border: 1.5px solid var(--accent); }
+
+/* Modal */
+.modal { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:#181A2090; z-index: 999; }
+.modal.open { display: flex; align-items: center; justify-content: center; }
+.modal-content { background: var(--card); border-radius: 14px; padding: 24px 18px; box-shadow: 0 2px 16px #0006; width: 340px; }
+
+/* Quick Actions Scroll */
+.quick-actions-row {
+  margin: 18px 0 0 0;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.quick-actions-scroll {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  min-width: 640px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+.quick-actions-scroll::-webkit-scrollbar { display: none; }
+.qa-btn {
+  min-width: 80px;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid #23262F;
+  border-radius: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 13px 6px 7px 6px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.qa-btn.active, .qa-btn:hover {
+  background: var(--accent);
+  color: #181A20;
+  border: 1px solid var(--accent);
+}
+.qa-btn img {
+  width: 26px; height: 26px; margin-bottom: 3px;
+}
+
+/* Balance and Asset List */
+.balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.balance-amount {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.asset-list { margin: 18px 0 0 0; }
+.asset-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--input-bg);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.asset-symbol { font-weight: 700; color: var(--accent); }
+.asset-balance { font-size: 1.1em; color: #fff; }
+.asset-actions { display: flex; gap: 7px; }
+
+/* Coin Cards */
+.coins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(112px,1fr));
+  gap: 13px;
+  margin: 14px 0 0 0;
+}
+.coin-card {
+  background: var(--input-bg);
+  border-radius: 10px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #23262F;
+}
+.coin-img { width: 30px; height: 30px; }
+.coin-name { font-weight: 700; margin-top: 4px; }
+.coin-symbol { color: var(--accent); font-size: 0.93em; }
+.coin-price { font-size: 1.03em; margin-top: 4px; }
+.coin-change { font-weight: 700; margin-top: 2px; }
+.coin-change.up { color: var(--success);}
+.coin-change:not(.up) { color: var(--danger);}
+
+/* Order Book & Panel */
+.orderbook-box {
+  background: var(--input-bg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 10px 0;
+}
+.orderbook-title { font-weight: 700; color: var(--accent); margin-bottom: 4px;}
+.orderbook-list span { display: block; margin: 2px 0; font-size: 0.97em; color: var(--muted);}
+.order-panel { background: var(--input-bg); border-radius: 10px; padding: 14px 12px; margin: 10px 0; }
+
+/* Tabs (footer navigation) */
+.tabs {
+  position: fixed;
+  bottom: 0; left: 0; width: 100vw;
+  background: var(--card);
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #23262F;
+  z-index: 99;
+}
+.tab { flex:1; text-align: center; padding: 13px 0 7px 0; color: var(--muted); font-weight: 700; font-size: 1em; cursor:pointer; }
+.tab.active, .tab:hover { color: var(--accent); background: #23262F; }
+.tab img { width: 23px; height: 23px; display: block; margin: 0 auto 2px auto; }
+
+/* Misc */
+select option { color: #181A20; background: var(--muted); }
+::-webkit-input-placeholder { color: var(--muted); }
+::-moz-placeholder { color: var(--muted); }
+:-ms-input-placeholder { color: var(--muted); }
+::placeholder { color: var(--muted); }
+hr { border: none; border-top: 1px solid #23262F; margin: 14px 0; }
+ul, ol { margin: 8px 0 8px 18px; }
+li { margin-bottom: 5px; }
+.feature-btn { margin-bottom: 10px; }
+
+/* Responsive */
+@media (max-width: 520px) {
+  .card { max-width: 98vw; }
+  .quick-actions-row { min-width: 100vw; }
+}
+@media (max-width: 400px) {
+  .quick-actions-scroll { min-width: 340px; }
+  .card { padding: 11px 4px 8px 4px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="header-logo">
+      <img src="https://coinstats.app/images/logo-new.svg" alt="CoinStats Logo"/>
+      <span class="header-title">On-chain Terminal</span>
+    </div>
+    <div class="header-btns">
+      <button class="header-btn" id="hdrSearchBtn"><img src="https://coinstats.app/images/search-icon.svg" alt="Search" style="width:22px;vertical-align:middle;"/></button>
+      <button class="header-btn" id="hdrNotifications" title="Notifications">🔔</button>
+      <button class="header-btn" id="hdrSettings" title="Settings">⚙️</button>
+      <button class="header-btn" id="hdrHelp" title="Need Help">❓</button>
+    </div>
+  </header>
+  <div class="pages">
+    <div class="container">
+
+      <!-- 1A. LANDING PAGE -->
+      <section id="page-landing" class="page active">
+        <div class="card card-section" style="background:#191B24;">
+          <div style="display:flex;align-items:center;gap:18px;">
+            <img src="https://coinstats.app/images/logo-new.svg" alt="CoinStats Logo" style="height:60px;width:60px;border-radius:14px;"/>
+            <div>
+              <div class="section-title">Track Crypto Portfolio & Get Market Insights</div>
+              <div class="section-sub">All-in-one crypto manager: track all your wallets, exchanges and DeFi from one place. Live prices, news, portfolio, analytics & more.</div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button id="landingConnect" class="btn">Connect Wallet</button>
+            <button id="landingGetApp" class="btn btn-secondary">Get App</button>
+            <button id="landingExplore" class="btn btn-secondary">Explore More</button>
+          </div>
+        </div>
+        <div class="search-bar-wrap">
+          <input type="text" class="search-input" id="landingSearch" placeholder="Search coins, tokens, news..." />
+          <button class="search-btn" id="landingSearchBtn"><img src="https://coinstats.app/images/search-icon.svg" style="width:19px;vertical-align:middle;"/></button>
+        </div>
+        <div class="feature-btns-wrap">
+          <button class="feature-btn" data-target="portfolio">Portfolio</button>
+          <button class="feature-btn" data-target="markets">Markets</button>
+          <button class="feature-btn" data-target="trade">Trade</button>
+          <button class="feature-btn" data-target="futures">Futures</button>
+          <button class="feature-btn" data-target="wallets">Wallets</button>
+          <button class="feature-btn" data-target="feed">Square Feed</button>
+          <button class="feature-btn" data-target="pay">Pay</button>
+          <button class="feature-btn" data-target="earn">Earn</button>
+          <button class="feature-btn" data-target="launchpad">Launchpad</button>
+          <button class="feature-btn" data-target="autoinvest">Auto-Invest</button>
+          <button class="feature-btn" data-target="simpleearn">Simple Earn</button>
+          <button class="feature-btn" data-target="mining">Mining Pool</button>
+          <button class="feature-btn" data-target="options">Options</button>
+          <button class="feature-btn" data-target="strategy">Strategy</button>
+          <button class="feature-btn" data-target="convert">Convert</button>
+          <button class="feature-btn" data-target="buy">Buy Crypto</button>
+          <button class="feature-btn" data-target="sell">Sell Crypto</button>
+          <button class="feature-btn" data-target="nft">NFTs</button>
+          <button class="feature-btn" data-target="web3wallet">Web3 Wallet</button>
+          <button class="feature-btn" data-target="margin">Margin</button>
+          <button class="feature-btn" data-target="profile">Profile</button>
+          <button class="feature-btn" data-target="security">Security</button>
+          <button class="feature-btn" data-target="identity">Identity</button>
+          <button class="feature-btn" data-target="notifications">Notifications</button>
+          <button class="feature-btn" data-target="referral">Referral</button>
+          <button class="feature-btn" data-target="vip">VIP</button>
+          <button class="feature-btn" data-target="help">Help</button>
+          <button class="feature-btn" data-target="lite">Lite Mode</button>
+          <button class="feature-btn" data-target="pro">Pro Mode</button>
+        </div>
+        <div class="market-section">
+          <div class="market-title">Market Overview</div>
+          <div id="marketOverview" class="market-overview"></div>
+        </div>
+        <div class="top-coins-title">Top Coins</div>
+        <div id="topCoins" class="coins-grid"></div>
+      </section>
+      <!-- 1B. WALLET CONNECT -->
+      <section id="page-wallets" class="page">
+        <div class="card">
+          <div class="card-title">Connect Your Wallet</div>
+          <div style="margin-bottom:18px;">Choose a wallet provider:</div>
+          <button class="btn btn-block" id="connectMetaMaskBtn">MetaMask</button>
+          <div style="margin:14px 0;color:var(--muted);text-align:center;font-size:15px;">Or manually enter wallet address:</div>
+          <input id="manualWalletAddr" class="btn-block" placeholder="0x... or address" />
+          <button class="btn btn-success btn-block" id="manualConnectBtn">Connect</button>
+          <div id="walletStatus" style="margin-top:14px;color:var(--muted);font-size:14px;"></div>
+          <div id="walletAddr" style="margin-top:8px;font-weight:700;"></div>
+          <button class="btn btn-block btn-secondary" id="closeWalletBtn" style="margin-top:20px;">Close</button>
+        </div>
+      </section>
+
+<!-- 2. HOME PAGE -->
+<section id="page-home" class="page">
+  <div class="card">
+    <div class="balance-row">
+      <div>
+        <span class="balance-amount" id="home-balance">$6,878.78</span>
+        <span class="balance-currency">USDT</span>
+        <div class="user-addr" id="home-addr">Not connected</div>
+      </div>
+      <button class="btn btn-secondary btn-block" id="home-disconnect">Disconnect Wallet</button>
+    </div>
+    <!-- Quick Actions - Horizontal Scroll like Binance -->
+    <div class="quick-actions-row">
+      <div class="quick-actions-scroll">
+        <!-- All Quick Action Buttons (see previous response for full list) -->
+        <div class="qa-btn" id="qa-markets"><img src="https://img.icons8.com/ios-filled/50/FCD535/line-chart.png"/><br>Markets</div>
+        <div class="qa-btn" id="qa-trade"><img src="https://img.icons8.com/ios-filled/50/FCD535/swap.png"/><br>Trade</div>
+        <div class="qa-btn" id="qa-futures"><img src="https://img.icons8.com/ios-filled/50/FCD535/clock.png"/><br>Futures</div>
+        <div class="qa-btn" id="qa-wallets"><img src="https://img.icons8.com/ios-filled/50/FCD535/wallet.png"/><br>Wallets</div>
+        <div class="qa-btn" id="qa-feed"><img src="https://img.icons8.com/ios-filled/50/FCD535/grid.png"/><br>Square Feed</div>
+        <div class="qa-btn" id="qa-pay"><img src="https://img.icons8.com/ios-filled/50/FCD535/qr-code.png"/><br>Pay</div>
+        <div class="qa-btn" id="qa-earn"><img src="https://img.icons8.com/ios-filled/50/FCD535/coins.png"/><br>Earn</div>
+        <div class="qa-btn" id="qa-launchpad"><img src="https://img.icons8.com/ios-filled/50/FCD535/rocket.png"/><br>Launchpad</div>
+        <div class="qa-btn" id="qa-autoinvest"><img src="https://img.icons8.com/ios-filled/50/FCD535/repeat.png"/><br>Auto-Invest</div>
+        <div class="qa-btn" id="qa-simpleearn"><img src="https://img.icons8.com/ios-filled/50/FCD535/money-box.png"/><br>Simple Earn</div>
+        <div class="qa-btn" id="qa-mining"><img src="https://img.icons8.com/ios-filled/50/FCD535/mining.png"/><br>Mining</div>
+        <div class="qa-btn" id="qa-options"><img src="https://img.icons8.com/ios-filled/50/FCD535/options.png"/><br>Options</div>
+        <div class="qa-btn" id="qa-strategy"><img src="https://img.icons8.com/ios-filled/50/FCD535/strategy-board.png"/><br>Strategy</div>
+        <div class="qa-btn" id="qa-convert"><img src="https://img.icons8.com/ios-filled/50/FCD535/exchange.png"/><br>Convert</div>
+        <div class="qa-btn" id="qa-buy"><img src="https://img.icons8.com/ios-filled/50/FCD535/buy.png"/><br>Buy</div>
+        <div class="qa-btn" id="qa-sell"><img src="https://img.icons8.com/ios-filled/50/FCD535/sell.png"/><br>Sell</div>
+        <div class="qa-btn" id="qa-nft"><img src="https://img.icons8.com/ios-filled/50/FCD535/diamond.png"/><br>NFTs</div>
+        <div class="qa-btn" id="qa-web3wallet"><img src="https://img.icons8.com/ios-filled/50/FCD535/ethereum.png"/><br>Web3 Wallet</div>
+        <div class="qa-btn" id="qa-margin"><img src="https://img.icons8.com/ios-filled/50/FCD535/graph.png"/><br>Margin</div>
+        <div class="qa-btn" id="qa-profile"><img src="https://img.icons8.com/ios-filled/50/FCD535/user.png"/><br>Profile</div>
+        <div class="qa-btn" id="qa-security"><img src="https://img.icons8.com/ios-filled/50/FCD535/security-checked.png"/><br>Security</div>
+        <div class="qa-btn" id="qa-identity"><img src="https://img.icons8.com/ios-filled/50/FCD535/passport.png"/><br>Identity</div>
+        <div class="qa-btn" id="qa-notifications"><img src="https://img.icons8.com/ios-filled/50/FCD535/appointment-reminders--v1.png"/><br>Notifications</div>
+        <div class="qa-btn" id="qa-referral"><img src="https://img.icons8.com/ios-filled/50/FCD535/affiliate.png"/><br>Referral</div>
+        <div class="qa-btn" id="qa-vip"><img src="https://img.icons8.com/ios-filled/50/FCD535/crown.png"/><br>VIP</div>
+        <div class="qa-btn" id="qa-help"><img src="https://img.icons8.com/ios-filled/50/FCD535/help.png"/><br>Help</div>
+        <div class="qa-btn" id="qa-lite"><img src="https://img.icons8.com/ios-filled/50/FCD535/light.png"/><br>Lite Mode</div>
+        <div class="qa-btn" id="qa-pro"><img src="https://img.icons8.com/ios-filled/50/FCD535/line-chart.png"/><br>Pro Mode</div>
+        <div class="qa-btn" id="qa-settings"><img src="https://img.icons8.com/ios-filled/50/FCD535/settings.png"/><br>Settings</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Top Coins</div>
+    <div id="home-top-coins" class="coins-grid"></div>
+  </div>
+</section>
+
+<!-- 3. MARKETS PAGE -->
+<section id="page-markets" class="page">
+  <div class="card">
+    <div class="card-title">Markets</div>
+    <div class="market-overview"></div>
+    <div class="btn-row">
+      <button class="btn" id="btn-global">Global Stats</button>
+      <button class="btn" id="btn-topgainers">Top Gainers</button>
+      <button class="btn" id="btn-toplosers">Top Losers</button>
+      <button class="btn" id="btn-newcoins">New Coins</button>
+      <button class="btn" id="btn-volume">High Volume</button>
+      <button class="btn" id="btn-marketcap">Market Cap</button>
+      <button class="btn" id="btn-nft">NFT</button>
+      <button class="btn" id="btn-defi">DeFi</button>
+      <button class="btn" id="btn-stablecoins">Stablecoins</button>
+      <button class="btn" id="btn-categories">Categories</button>
+      <button class="btn" id="btn-exchanges">Exchanges</button>
+      <button class="btn" id="btn-news">Market News</button>
+      <button class="btn" id="btn-watchlist">Watchlist</button>
+      <button class="btn" id="btn-portfolios">Portfolios</button>
+    </div>
+    <div class="top-coins-title" style="margin-top:18px;">Top Coins</div>
+    <div class="coins-grid" id="markets-coins"></div>
+  </div>
+  <div id="markets-subpages">
+    <div id="markets-global" class="card hidden"></div>
+    <div id="markets-topgainers" class="card hidden"></div>
+    <div id="markets-toplosers" class="card hidden"></div>
+    <div id="markets-newcoins" class="card hidden"></div>
+    <div id="markets-volume" class="card hidden"></div>
+    <div id="markets-marketcap" class="card hidden"></div>
+    <div id="markets-nft" class="card hidden"></div>
+    <div id="markets-defi" class="card hidden"></div>
+    <div id="markets-stablecoins" class="card hidden"></div>
+    <div id="markets-categories" class="card hidden"></div>
+    <div id="markets-exchanges" class="card hidden"></div>
+    <div id="markets-news" class="card hidden"></div>
+    <div id="markets-watchlist" class="card hidden"></div>
+    <div id="markets-portfolios" class="card hidden"></div>
+  </div>
+</section>
+
+<!-- 4. TRADE PAGE -->
+<section id="page-trade" class="page">
+  <div class="card">
+    <div class="card-title">Trade (Spot & Margin)</div>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn" id="btn-btcusdt">BTC/USDT</button>
+      <button class="btn" id="btn-ethusdt">ETH/USDT</button>
+      <button class="btn" id="btn-bnbusdt">BNB/USDT</button>
+      <button class="btn" id="btn-solusdt">SOL/USDT</button>
+      <button class="btn" id="btn-morepairs">More...</button>
+    </div>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn" id="btn-spot">Spot</button>
+      <button class="btn" id="btn-margin">Margin</button>
+    </div>
+    <div id="trade-chart" style="height:220px;overflow:hidden;border-radius:10px;margin-bottom:16px;"></div>
+    <div class="orderbook-box" id="trade-orderbook">
+      <div class="orderbook-title">Order Book</div>
+      <div class="orderbook-list" id="orderbook-list"></div>
+    </div>
+    <div class="orderbook-box" id="trade-recenttrades">
+      <div class="orderbook-title">Recent Trades</div>
+      <div class="orderbook-list" id="recenttrades-list"></div>
+    </div>
+    <div class="order-panel">
+      <label for="tradeAmount">Amount</label>
+      <input id="tradeAmount" class="btn-block" placeholder="Amount" />
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="trade-25">25%</button>
+        <button class="btn btn-secondary" id="trade-50">50%</button>
+        <button class="btn btn-secondary" id="trade-100">100%</button>
+      </div>
+      <label for="tradeType" style="margin-top:10px;">Order Type</label>
+      <select id="tradeType" class="btn-block">
+        <option value="limit">Limit</option>
+        <option value="market">Market</option>
+        <option value="stop">Stop-Limit</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-success btn-block" id="tradeBuyBtn">Buy</button>
+        <button class="btn btn-danger btn-block" id="tradeSellBtn">Sell</button>
+      </div>
+    </div>
+    <div class="card-section" style="margin-top:16px;">
+      <div class="btn-row">
+        <button class="btn" id="btn-openorders">Open Orders</button>
+        <button class="btn" id="btn-orderhistory">Order History</button>
+        <button class="btn" id="btn-positions">Positions</button>
+        <button class="btn" id="btn-stoporders">Stop Orders</button>
+        <button class="btn" id="btn-trade-settings">Settings</button>
+      </div>
+    </div>
+  </div>
+  <div id="trade-subpages">
+    <div id="trade-openorders" class="card hidden"></div>
+    <div id="trade-orderhistory" class="card hidden"></div>
+    <div id="trade-positions" class="card hidden"></div>
+    <div id="trade-stoporders" class="card hidden"></div>
+    <div id="trade-settings" class="card hidden"></div>
+    <div id="trade-morepairs" class="card hidden"></div>
+  </div>
+</section>
+
+<!-- 5. WALLETS PAGE -->
+<section id="page-wallets" class="page">
+  <div class="card">
+    <div class="card-title">Wallets</div>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn" id="btn-spotwallet">Spot</button>
+      <button class="btn" id="btn-fundingwallet">Funding</button>
+      <button class="btn" id="btn-futureswallet">Futures</button>
+      <button class="btn" id="btn-earnwallet">Earn</button>
+      <button class="btn" id="btn-web3wallet">Web3</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <strong>Total Balance:</strong> <span id="wallet-total-balance">$9,381.27</span>
+    </div>
+    <div class="btn-row" style="margin-bottom:16px;">
+      <button class="btn" id="btn-deposit">Deposit</button>
+      <button class="btn" id="btn-withdraw">Withdraw</button>
+      <button class="btn" id="btn-transfer">Transfer</button>
+      <button class="btn" id="btn-history">History</button>
+      <button class="btn" id="btn-addressbook">Address Book</button>
+      <button class="btn" id="btn-morewallets">More...</button>
+    </div>
+    <div id="wallet-assets-list" class="asset-list"></div>
+  </div>
+  <div id="wallets-subpages">
+    <div id="wallet-spot" class="card hidden"></div>
+    <div id="wallet-funding" class="card hidden"></div>
+    <div id="wallet-futures" class="card hidden"></div>
+    <div id="wallet-earn" class="card hidden"></div>
+    <div id="wallet-web3" class="card hidden"></div>
+    <div id="wallet-deposit" class="card hidden"></div>
+    <div id="wallet-withdraw" class="card hidden"></div>
+    <div id="wallet-transfer" class="card hidden"></div>
+    <div id="wallet-history" class="card hidden"></div>
+    <div id="wallet-addressbook" class="card hidden"></div>
+    <div id="wallet-morewallets" class="card hidden"></div>
+  </div>
+   <!-- Deposit Page -->
+  <div id="wallet-deposit" class="card hidden">
+    <div class="card-title">Deposit</div>
+    <div style="margin-bottom:12px;">Select Chain:</div>
+    <select id="depositChain" class="btn-block">
+      <option value="ETH">Ethereum</option>
+      <option value="BSC">BNB Smart Chain</option>
+      <option value="POLYGON">Polygon</option>
+      <option value="ARBITRUM">Arbitrum</option>
+      <option value="OPTIMISM">Optimism</option>
+      <option value="AVAX">Avalanche</option>
+      <option value="SOL">Solana</option>
+      <option value="BTC">Bitcoin</option>
+    </select>
+    <div style="margin:12px 0;">
+      <strong>Deposit Address:</strong>
+      <span id="depositAddress" style="font-weight:700;"></span>
+      <button class="btn btn-secondary" id="copyDeposit" style="margin-left:8px;">Copy</button>
+    </div>
+    <div id="depositQR" style="margin:12px 0;"></div>
+    <div class="small muted">Send only supported tokens to this address. Network fees may apply.</div>
+  </div>
+
+  <!-- Withdraw Page -->
+  <div id="wallet-withdraw" class="card hidden">
+    <div class="card-title">Withdraw</div>
+    <form id="withdrawForm">
+      <label for="withdrawAddress">Recipient Address</label>
+      <input id="withdrawAddress" class="btn-block" placeholder="0x... or address" required />
+      <label for="withdrawAmount">Amount</label>
+      <input id="withdrawAmount" class="btn-block" placeholder="Amount" type="number" required />
+      <div class="btn-row">
+        <button class="btn btn-secondary" type="button" id="withdrawMax">Max</button>
+      </div>
+      <button class="btn btn-danger btn-block" type="submit" id="withdrawConfirmBtn">Confirm Withdraw</button>
+    </form>
+  </div>
+  <!-- Withdraw Confirm Page -->
+  <div id="withdraw-confirm" class="card hidden">
+    <div class="card-title">Confirm Withdrawal</div>
+    <div>Recipient: <span id="confirmWithdrawAddress"></span></div>
+    <div>Amount: <span id="confirmWithdrawAmount"></span></div>
+    <input id="confirmTxHash" class="btn-block" placeholder="Transaction Hash (mock)" />
+    <button class="btn btn-success btn-block" id="confirmTxBtn">Submit Withdrawal</button>
+  </div>
+  <!-- Withdraw Processing Page -->
+  <div id="processing" class="card hidden">
+    <div class="card-title">Processing Withdrawal</div>
+    <div>Estimated time: <span id="countdownTimer">24:00:00</span></div>
+    <div class="small muted">Do not close this page while withdrawal is processing.</div>
+  </div>
+  <!-- Withdraw Success Page -->
+  <div id="withdraw-success" class="card hidden">
+    <div class="card-title">Withdrawal Successful</div>
+    <div id="successTxDisplay"></div>
+    <button class="btn btn-block" onclick="showPage('wallets')">Back to Wallets</button>
+  </div>
+
+  <!-- Transfer Page -->
+  <div id="wallet-transfer" class="card hidden">
+    <div class="card-title">Transfer</div>
+    <form id="transferForm">
+      <label for="transferTo">To Wallet</label>
+      <select id="transferTo" class="btn-block">
+        <option value="spot">Spot</option>
+        <option value="funding">Funding</option>
+        <option value="futures">Futures</option>
+        <option value="earn">Earn</option>
+        <option value="web3">Web3</option>
+      </select>
+      <label for="transferAmount">Amount</label>
+      <input id="transferAmount" class="btn-block" placeholder="Amount" type="number" required />
+      <button class="btn btn-success btn-block" type="submit" id="transferConfirmBtn">Confirm Transfer</button>
+    </form>
+  </div>
+  <!-- History Page -->
+  <div id="wallet-history" class="card hidden">
+    <div class="card-title">History</div>
+    <div class="muted">Recent Deposits, Withdrawals, and Transfers:</div>
+    <ul id="historyList" class="small"></ul>
+  </div>
+  <!-- Address Book Page -->
+  <div id="wallet-addressbook" class="card hidden">
+    <div class="card-title">Address Book</div>
+    <div class="muted">Saved withdrawal addresses:</div>
+    <ul id="addressBookList" class="small"></ul>
+    <button class="btn btn-block" id="addAddressBtn">Add New Address</button>
+  </div>
+  <!-- More Wallets Page -->
+  <div id="wallet-morewallets" class="card hidden">
+    <div class="card-title">More Wallet Features</div>
+    <div>Multi-chain support, fiat on/off ramp, cold storage options, etc. <br>Feature coming soon!</div>
+  </div>
+</div>
+
+    <!-- Dynamic Wallet Assets List -->
+    <div id="wallet-assets-list" class="asset-list"></div>
+  </div>
+
+  <!-- Subpages for each wallet type and actions -->
+  <div id="wallets-subpages">
+    <div id="wallet-spot" class="card hidden"></div>
+    <div id="wallet-funding" class="card hidden"></div>
+    <div id="wallet-futures" class="card hidden"></div>
+    <div id="wallet-earn" class="card hidden"></div>
+    <div id="wallet-web3" class="card hidden"></div>
+    <div id="wallet-deposit" class="card hidden"></div>
+    <div id="wallet-withdraw" class="card hidden"></div>
+    <div id="wallet-transfer" class="card hidden"></div>
+    <div id="wallet-history" class="card hidden"></div>
+    <div id="wallet-addressbook" class="card hidden"></div>
+    <div id="wallet-morewallets" class="card hidden"></div>
+  </div>
+<!-- Wallet Type and Action Subpages -->
+<div id="wallets-subpages">
+  <!-- Spot Wallet Page -->
+  <div id="wallet-spot" class="card hidden">
+    <div class="card-title">Spot Wallet</div>
+    <div id="spot-assets-list" class="asset-list"></div>
+  </div>
+  <!-- Funding Wallet Page -->
+  <div id="wallet-funding" class="card hidden">
+    <div class="card-title">Funding Wallet</div>
+    <div id="funding-assets-list" class="asset-list"></div>
+  </div>
+  <!-- Futures Wallet Page -->
+  <div id="wallet-futures" class="card hidden">
+    <div class="card-title">Futures Wallet</div>
+    <div id="futures-assets-list" class="asset-list"></div>
+  </div>
+  <!-- Earn Wallet Page -->
+  <div id="wallet-earn" class="card hidden">
+    <div class="card-title">Earn Wallet</div>
+    <div id="earn-assets-list" class="asset-list"></div>
+  </div>
+  <!-- Web3 Wallet Page -->
+  <div id="wallet-web3" class="card hidden">
+    <div class="card-title">Web3 Wallet</div>
+    <div id="web3-assets-list" class="asset-list"></div>
+  </div>
+  <!-- Deposit Page -->
+  <div id="wallet-deposit" class="card hidden">
+    <div class="card-title">Deposit</div>
+    <div id="deposit-chain-select"></div>
+    <div id="deposit-address-wrap"></div>
+    <div id="depositQR"></div>
+  </div>
+  <!-- Withdraw Page -->
+  <div id="wallet-withdraw" class="card hidden">
+    <div class="card-title">Withdraw</div>
+    <form id="withdrawForm">
+      <label for="withdrawAddress">Recipient Address</label>
+      <input id="withdrawAddress" class="btn-block" placeholder="0x... or address" required />
+      <label for="withdrawAmount">Amount</label>
+      <input id="withdrawAmount" class="btn-block" placeholder="Amount" type="number" required />
+      <div class="btn-row">
+        <button class="btn btn-secondary" type="button" id="withdrawMax">Max</button>
+      </div>
+      <button class="btn btn-danger btn-block" type="submit" id="withdrawConfirmBtn">Confirm Withdraw</button>
+    </form>
+  </div>
+  <!-- Transfer Page -->
+  <div id="wallet-transfer" class="card hidden">
+    <div class="card-title">Transfer</div>
+    <form id="transferForm">
+      <label for="transferTo">To Wallet</label>
+      <select id="transferTo" class="btn-block">
+        <option value="spot">Spot</option>
+        <option value="funding">Funding</option>
+        <option value="futures">Futures</option>
+        <option value="earn">Earn</option>
+        <option value="web3">Web3</option>
+      </select>
+      <label for="transferAmount">Amount</label>
+      <input id="transferAmount" class="btn-block" placeholder="Amount" type="number" required />
+      <button class="btn btn-success btn-block" type="submit" id="transferConfirmBtn">Confirm Transfer</button>
+    </form>
+  </div>
+  <!-- History Page -->
+  <div id="wallet-history" class="card hidden">
+    <div class="card-title">History</div>
+    <div class="muted">Recent Deposits, Withdrawals, and Transfers:</div>
+    <ul id="historyList" class="small"></ul>
+  </div>
+  <!-- Address Book Page -->
+  <div id="wallet-addressbook" class="card hidden">
+    <div class="card-title">Address Book</div>
+    <div class="muted">Saved withdrawal addresses:</div>
+    <ul id="addressBookList" class="small"></ul>
+    <button class="btn btn-block" id="addAddressBtn">Add New Address</button>
+  </div>
+  <!-- More Wallets Page -->
+  <div id="wallet-morewallets" class="card hidden">
+    <div class="card-title">More Wallet Features</div>
+    <div>Multi-chain support, fiat on/off ramp, cold storage options, etc.<br>Feature coming soon!</div>
+  </div>
+</div>
+</section>
+
+<!-- 6. SQUARE FEED PAGE -->
+<section id="page-feed" class="page">
+  <div class="card">
+    <div class="card-title">Square / Discover Feed</div>
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn" id="btn-news">News</button>
+      <button class="btn" id="btn-academy">Academy</button>
+      <button class="btn" id="btn-live">Live</button>
+      <button class="btn" id="btn-community">Community</button>
+    </div>
+    <div id="feed-content">
+      <div class="muted">Select a tab above to view content.</div>
+    </div>
+  </div>
+  <div id="feed-news" class="card hidden"></div>
+  <div id="feed-academy" class="card hidden"></div>
+  <div id="feed-live" class="card hidden"></div>
+  <div id="feed-community" class="card hidden"></div>
+</section>
+
+<!-- 7. PAY PAGE -->
+<section id="page-pay" class="page">
+  <div class="card">
+    <div class="card-title">Binance Pay</div>
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn" id="btn-sendcrypto">Send Crypto</button>
+      <button class="btn" id="btn-receivecrypto">Receive Crypto</button>
+      <button class="btn" id="btn-qrpay">QR Payment</button>
+      <button class="btn" id="btn-payhistory">Payment History</button>
+    </div>
+    <div id="pay-content">
+      <div class="muted">Choose an action above.</div>
+    </div>
+  </div>
+  <div id="pay-send" class="card hidden"></div>
+  <div id="pay-receive" class="card hidden"></div>
+  <div id="pay-qr" class="card hidden"></div>
+  <div id="pay-history" class="card hidden"></div>
+</section>
+
+<!-- 8. EARN PAGE -->
+<section id="page-earn" class="page">
+  <div class="card">
+    <div class="card-title">Earn</div>
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn" id="btn-savings">Savings</button>
+      <button class="btn" id="btn-staking">Staking</button>
+      <button class="btn" id="btn-launchpool">Launchpool</button>
+      <button class="btn" id="btn-dual">Dual Investment</button>
+    </div>
+    <div id="earn-content">
+      <div class="muted">Select a product above.</div>
+    </div>
+  </div>
+  <div id="earn-savings" class="card hidden"></div>
+  <div id="earn-staking" class="card hidden"></div>
+  <div id="earn-launchpool" class="card hidden"></div>
+  <div id="earn-dual" class="card hidden"></div>
+</section>
+
+<!-- 9. LAUNCHPAD PAGE -->
+<section id="page-launchpad" class="page">
+  <div class="card">
+    <div class="card-title">Launchpad / Launchpool</div>
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn" id="btn-newtokens">New Tokens</button>
+      <button class="btn" id="btn-farming">Token Farming</button>
+      <button class="btn" id="btn-previous">Previous Sales</button>
+    </div>
+    <div id="launchpad-content">
+      <div class="muted">Choose a launchpad option above.</div>
+    </div>
+  </div>
+  <div id="launchpad-newtokens" class="card hidden"></div>
+  <div id="launchpad-farming" class="card hidden"></div>
+  <div id="launchpad-previous" class="card hidden"></div>
+</section>
+
+<!-- 10. AUTOINVEST PAGE -->
+<section id="page-autoinvest" class="page">
+  <div class="card">
+    <div class="card-title">Auto-Invest</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-newplan">New Plan</button>
+      <button class="btn" id="btn-myplans">My Plans</button>
+    </div>
+    <div id="autoinvest-content">
+      <div class="muted">Set up recurring crypto purchases or view your plans.</div>
+    </div>
+  </div>
+  <div id="autoinvest-newplan" class="card hidden"></div>
+  <div id="autoinvest-myplans" class="card hidden"></div>
+</section>
+
+<!-- 11. SIMPLE EARN PAGE -->
+<section id="page-simpleearn" class="page">
+  <div class="card">
+    <div class="card-title">Simple Earn</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-flexible">Flexible</button>
+      <button class="btn" id="btn-locked">Locked</button>
+    </div>
+    <div id="simpleearn-content">
+      <div class="muted">Choose between flexible or locked savings.</div>
+    </div>
+  </div>
+  <div id="simpleearn-flexible" class="card hidden"></div>
+  <div id="simpleearn-locked" class="card hidden"></div>
+</section>
+
+<!-- 12. MINING POOL PAGE -->
+<section id="page-mining" class="page">
+  <div class="card">
+    <div class="card-title">Mining Pool</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-dashboard">Dashboard</button>
+      <button class="btn" id="btn-miners">Miners</button>
+      <button class="btn" id="btn-payouts">Payouts</button>
+      <button class="btn" id="btn-settings">Settings</button>
+    </div>
+    <div id="mining-content">
+      <div class="muted">Manage your mining activity.</div>
+    </div>
+  </div>
+  <div id="mining-dashboard" class="card hidden"></div>
+  <div id="mining-miners" class="card hidden"></div>
+  <div id="mining-payouts" class="card hidden"></div>
+  <div id="mining-settings" class="card hidden"></div>
+</section>
+
+<!-- 13. OPTIONS PAGE -->
+<section id="page-options" class="page">
+  <div class="card">
+    <div class="card-title">Options</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-tradeoptions">Trade Options</button>
+      <button class="btn" id="btn-myoptions">My Options</button>
+    </div>
+    <div id="options-content">
+      <div class="muted">Trade crypto options or view your positions.</div>
+    </div>
+  </div>
+  <div id="options-tradeoptions" class="card hidden"></div>
+  <div id="options-myoptions" class="card hidden"></div>
+</section>
+
+<!-- 14. STRATEGY PAGE -->
+<section id="page-strategy" class="page">
+  <div class="card">
+    <div class="card-title">Strategy Trading</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-grid">Grid Trading</button>
+      <button class="btn" id="btn-copy">Copy Trading</button>
+    </div>
+    <div id="strategy-content">
+      <div class="muted">Choose a strategy above.</div>
+    </div>
+  </div>
+  <div id="strategy-grid" class="card hidden"></div>
+  <div id="strategy-copy" class="card hidden"></div>
+</section>
+
+<!-- 15. CONVERT PAGE -->
+<section id="page-convert" class="page">
+  <div class="card">
+    <div class="card-title">Convert</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-simpleconvert">Simple Swap</button>
+      <button class="btn" id="btn-advancedconvert">Advanced Swap</button>
+    </div>
+    <div id="convert-content">
+      <div class="muted">Quickly exchange crypto with no fees.</div>
+    </div>
+  </div>
+  <div id="convert-simpleconvert" class="card hidden"></div>
+  <div id="convert-advancedconvert" class="card hidden"></div>
+</section>
+
+<!-- 16. BUY CRYPTO PAGE -->
+<section id="page-buy" class="page">
+  <div class="card">
+    <div class="card-title">Buy Crypto</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-card">Buy with Card</button>
+      <button class="btn" id="btn-bank">Bank Transfer</button>
+      <button class="btn" id="btn-p2p">P2P</button>
+      <button class="btn" id="btn-thirdparty">Third-party</button>
+    </div>
+    <div id="buy-content">
+      <div class="muted">Select a method above.</div>
+    </div>
+  </div>
+  <div id="buy-card" class="card hidden"></div>
+  <div id="buy-bank" class="card hidden"></div>
+  <div id="buy-p2p" class="card hidden"></div>
+  <div id="buy-thirdparty" class="card hidden"></div>
+</section>
+
+<!-- 17. SELL CRYPTO PAGE -->
+<section id="page-sell" class="page">
+  <div class="card">
+    <div class="card-title">Sell Crypto</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-fiatwithdraw">Fiat Withdraw</button>
+      <button class="btn" id="btn-sellcard">Sell to Card</button>
+      <button class="btn" id="btn-sellp2p">Sell P2P</button>
+    </div>
+    <div id="sell-content">
+      <div class="muted">Select a method above.</div>
+    </div>
+  </div>
+  <div id="sell-fiatwithdraw" class="card hidden"></div>
+  <div id="sell-sellcard" class="card hidden"></div>
+  <div id="sell-sellp2p" class="card hidden"></div>
+</section>
+
+<!-- 18. NFT PAGE -->
+<section id="page-nft" class="page">
+  <div class="card">
+    <div class="card-title">NFT Marketplace</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-nftmarket">Market</button>
+      <button class="btn" id="btn-gaming">Gaming</button>
+      <button class="btn" id="btn-mystery">Mystery Boxes</button>
+    </div>
+    <div id="nft-content">
+      <div class="muted">Select a section above.</div>
+    </div>
+  </div>
+  <div id="nft-market" class="card hidden"></div>
+  <div id="nft-gaming" class="card hidden"></div>
+  <div id="nft-mystery" class="card hidden"></div>
+</section>
+
+<!-- 19. WEB3 WALLET PAGE -->
+<section id="page-web3wallet" class="page">
+  <div class="card">
+    <div class="card-title">Web3 Wallet / DApp Browser</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-defi">DeFi</button>
+      <button class="btn" id="btn-stakingweb3">Staking</button>
+      <button class="btn" id="btn-dapps">DApps</button>
+    </div>
+    <div id="web3wallet-content">
+      <div class="muted">Explore DeFi, staking, and dApps.</div>
+    </div>
+  </div>
+  <div id="web3wallet-defi" class="card hidden"></div>
+  <div id="web3wallet-staking" class="card hidden"></div>
+  <div id="web3wallet-dapps" class="card hidden"></div>
+</section>
+
+<!-- 20. MARGIN PAGE -->
+<section id="page-margin" class="page">
+  <div class="card">
+    <div class="card-title">Margin Trading</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-cross">Cross Margin</button>
+      <button class="btn" id="btn-isolated">Isolated Margin</button>
+    </div>
+    <div id="margin-content">
+      <div class="muted">Select margin type above.</div>
+    </div>
+  </div>
+  <div id="margin-cross" class="card hidden"></div>
+  <div id="margin-isolated" class="card hidden"></div>
+</section>
+
+<!-- 21. PROFILE PAGE -->
+<section id="page-profile" class="page">
+  <div class="card">
+    <div class="card-title">Profile / Account Center</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-account">Account Details</button>
+      <button class="btn" id="btn-preferences">Preferences</button>
+    </div>
+    <div id="profile-content">
+      <div class="muted">Manage your account information.</div>
+    </div>
+  </div>
+  <div id="profile-account" class="card hidden"></div>
+  <div id="profile-preferences" class="card hidden"></div>
+</section>
+
+<!-- 22. SECURITY PAGE -->
+<section id="page-security" class="page">
+  <div class="card">
+    <div class="card-title">Security Settings</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-2fa">2FA</button>
+      <button class="btn" id="btn-devices">Devices</button>
+      <button class="btn" id="btn-whitelist">Withdrawal Whitelist</button>
+    </div>
+    <div id="security-content">
+      <div class="muted">Configure your security settings.</div>
+    </div>
+  </div>
+  <div id="security-2fa" class="card hidden"></div>
+  <div id="security-devices" class="card hidden"></div>
+  <div id="security-whitelist" class="card hidden"></div>
+</section>
+
+<!-- 23. IDENTITY PAGE -->
+<section id="page-identity" class="page">
+  <div class="card">
+    <div class="card-title">Identity Verification</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-kyc">KYC</button>
+      <button class="btn" id="btn-documents">Documents</button>
+    </div>
+    <div id="identity-content">
+      <div class="muted">Complete your identity verification.</div>
+    </div>
+  </div>
+  <div id="identity-kyc" class="card hidden"></div>
+  <div id="identity-documents" class="card hidden"></div>
+</section>
+
+<!-- 24. NOTIFICATIONS PAGE -->
+<section id="page-notifications" class="page">
+  <div class="card">
+    <div class="card-title">Notifications & Messages</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-alerts">Alerts</button>
+      <button class="btn" id="btn-messages">Messages</button>
+      <button class="btn" id="btn-newsnotify">News</button>
+    </div>
+    <div id="notifications-content">
+      <div class="muted">View alerts, messages, and news.</div>
+    </div>
+  </div>
+  <div id="notifications-alerts" class="card hidden"></div>
+  <div id="notifications-messages" class="card hidden"></div>
+  <div id="notifications-newsnotify" class="card hidden"></div>
+</section>
+
+<!-- 25. REFERRAL PAGE -->
+<section id="page-referral" class="page">
+  <div class="card">
+    <div class="card-title">Referral / Affiliates</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-referrals">Referrals</button>
+      <button class="btn" id="btn-affiliates">Affiliates</button>
+    </div>
+    <div id="referral-content">
+      <div class="muted">Track your referral rewards and affiliate programs.</div>
+    </div>
+  </div>
+  <div id="referral-referrals" class="card hidden"></div>
+  <div id="referral-affiliates" class="card hidden"></div>
+</section>
+
+<!-- 26. VIP PAGE -->
+<section id="page-vip" class="page">
+  <div class="card">
+    <div class="card-title">VIP & Institutional Services</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-viplevels">VIP Levels</button>
+      <button class="btn" id="btn-perks">Perks</button>
+    </div>
+    <div id="vip-content">
+      <div class="muted">Exclusive services and benefits for VIPs.</div>
+    </div>
+  </div>
+  <div id="vip-viplevels" class="card hidden"></div>
+  <div id="vip-perks" class="card hidden"></div>
+</section>
+
+<!-- 27. HELP PAGE -->
+<section id="page-help" class="page">
+  <div class="card">
+    <div class="card-title">Help Center / Support Chat</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-faq">FAQ</button>
+      <button class="btn" id="btn-supportchat">Support Chat</button>
+    </div>
+    <div id="help-content">
+      <div class="muted">Find answers or contact support.</div>
+    </div>
+  </div>
+  <div id="help-faq" class="card hidden"></div>
+  <div id="help-supportchat" class="card hidden"></div>
+</section>
+
+<!-- 28. LITE MODE PAGE -->
+<section id="page-lite" class="page">
+  <div class="card">
+    <div class="card-title">Lite Mode Home</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-quickbuy">Quick Buy</button>
+      <button class="btn" id="btn-quicksell">Quick Sell</button>
+      <button class="btn" id="btn-simplecharts">Simple Charts</button>
+      <button class="btn" id="btn-favorites">Favorites</button>
+    </div>
+    <div id="lite-content">
+      <div class="muted">Simplified trading experience.</div>
+    </div>
+  </div>
+  <div id="lite-quickbuy" class="card hidden"></div>
+  <div id="lite-quicksell" class="card hidden"></div>
+  <div id="lite-simplecharts" class="card hidden"></div>
+  <div id="lite-favorites" class="card hidden"></div>
+</section>
+
+<!-- 29. PRO MODE PAGE -->
+<section id="page-pro" class="page">
+  <div class="card">
+    <div class="card-title">Pro Mode</div>
+    <div class="btn-row">
+      <button class="btn" id="btn-advancedcharts">Advanced Charts</button>
+      <button class="btn" id="btn-orderbookpro">Order Book</button>
+      <button class="btn" id="btn-tradingtools">Trading Tools</button>
+    </div>
+    <div id="pro-content">
+      <div class="muted">Professional trading dashboard.</div>
+    </div>
+  </div>
+  <div id="pro-advancedcharts" class="card hidden"></div>
+  <div id="pro-orderbookpro" class="card hidden"></div>
+  <div id="pro-tradingtools" class="card hidden"></div>
+</section>
+
+<!-- 30. SETTINGS PAGE -->
+<section id="page-settings" class="page">
+  <div class="card">
+    <div class="card-title">Settings</div>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn" id="btn-generalsettings">General</button>
+      <button class="btn" id="btn-themesettings">Theme</button>
+      <button class="btn" id="btn-securitysettings">Security</button>
+      <button class="btn" id="btn-notificationsettings">Notifications</button>
+      <button class="btn" id="btn-privacysettings">Privacy</button>
+      <button class="btn" id="btn-connectedaccounts">Linked Accounts</button>
+      <button class="btn" id="btn-devicesettings">Devices</button>
+      <button class="btn" id="btn-language">Language</button>
+      <button class="btn" id="btn-advancedsettings">Advanced</button>
+      <button class="btn" id="btn-aboutsettings">About</button>
+      <button class="btn" id="btn-supportsettings">Support</button>
+    </div>
+    <div id="settings-content">
+      <div class="muted">Select a category above to view or change your settings.</div>
+    </div>
+  </div>
+  <!-- Settings Subpages -->
+  <div id="settings-subpages">
+    <div id="settings-general" class="card hidden">
+      <div class="card-title">General Settings</div>
+      <form id="generalSettingsForm">
+        <label for="username">Username</label>
+        <input id="username" class="btn-block" placeholder="Your username" name="username" />
+        <label for="email">Email</label>
+        <input id="email" class="btn-block" type="email" placeholder="Your email" name="email" />
+        <button class="btn btn-success btn-block" type="submit">Save Changes</button>
+      </form>
+    </div>
+    <div id="settings-theme" class="card hidden">
+      <div class="card-title">Theme Settings</div>
+      <div class="btn-row">
+        <button class="btn" id="btn-theme-light">Light Mode</button>
+        <button class="btn" id="btn-theme-dark">Dark Mode</button>
+        <button class="btn" id="btn-theme-system">System Default</button>
+      </div>
+      <div class="muted">Choose your app's appearance.</div>
+    </div>
+    <div id="settings-security" class="card hidden">
+      <div class="card-title">Security Settings</div>
+      <div class="btn-row">
+        <button class="btn" id="btn-changepassword">Change Password</button>
+        <button class="btn" id="btn-setup2fa">Set up 2FA</button>
+        <button class="btn" id="btn-securitydevices">Manage Devices</button>
+        <button class="btn" id="btn-withdrawwhitelist">Withdrawal Whitelist</button>
+      </div>
+      <div class="muted">Manage your security settings.</div>
+    </div>
+    <div id="settings-notification" class="card hidden">
+      <div class="card-title">Notification Settings</div>
+      <form id="notificationSettingsForm">
+        <label for="notif-email">Email Notifications</label>
+        <input type="checkbox" id="notif-email" name="notif-email" checked /> Enable
+        <br>
+        <label for="notif-sms">SMS Notifications</label>
+        <input type="checkbox" id="notif-sms" name="notif-sms" /> Enable
+        <br>
+        <label for="notif-push">Push Notifications</label>
+        <input type="checkbox" id="notif-push" name="notif-push" checked /> Enable
+        <button class="btn btn-success btn-block" type="submit">Update Notifications</button>
+      </form>
+    </div>
+    <div id="settings-privacy" class="card hidden">
+      <div class="card-title">Privacy Settings</div>
+      <form id="privacySettingsForm">
+        <label for="privacy-profile">Profile Visibility</label>
+        <select id="privacy-profile" class="btn-block" name="privacy-profile">
+          <option value="public">Public</option>
+          <option value="private">Private</option>
+          <option value="friends">Friends Only</option>
+        </select>
+        <label for="privacy-data">Data Sharing</label>
+        <input type="checkbox" id="privacy-data" name="privacy-data" /> Allow sharing with partners
+        <button class="btn btn-success btn-block" type="submit">Update Privacy</button>
+      </form>
+    </div>
+    <div id="settings-connectedaccounts" class="card hidden">
+      <div class="card-title">Linked Accounts</div>
+      <div class="muted">Manage your linked social and crypto accounts.</div>
+      <ul class="small">
+        <li>Google <button class="btn btn-sm">Unlink</button></li>
+        <li>Apple <button class="btn btn-sm">Unlink</button></li>
+        <li>MetaMask <button class="btn btn-sm">Unlink</button></li>
+        <li>WalletConnect <button class="btn btn-sm">Unlink</button></li>
+      </ul>
+      <button class="btn btn-block" id="addLinkedAccountBtn">Add Account</button>
+    </div>
+    <div id="settings-device" class="card hidden">
+      <div class="card-title">Device Settings</div>
+      <div class="muted">List of devices authorized to access your account.</div>
+      <ul class="small">
+        <li>iPhone 15 Pro <button class="btn btn-sm">Remove</button></li>
+        <li>MacBook Air <button class="btn btn-sm">Remove</button></li>
+        <li>Windows Desktop <button class="btn btn-sm">Remove</button></li>
+      </ul>
+      <button class="btn btn-block" id="addDeviceBtn">Add Device</button>
+    </div>
+    <div id="settings-language" class="card hidden">
+      <div class="card-title">Language Settings</div>
+      <select id="languageSelect" class="btn-block">
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="ru">Русский</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+      </select>
+      <button class="btn btn-success btn-block" id="updateLanguageBtn">Update Language</button>
+    </div>
+    <div id="settings-advanced" class="card hidden">
+      <div class="card-title">Advanced Settings</div>
+      <div class="muted">Developer/API, experimental features and advanced options.</div>
+      <button class="btn btn-block" id="btn-api">API Management</button>
+      <button class="btn btn-block" id="btn-experimental">Experimental Features</button>
+    </div>
+    <div id="settings-about" class="card hidden">
+      <div class="card-title">About</div>
+      <div class="muted">App version: 1.0.0<br>Copyright © 2025 Domain-System</div>
+      <button class="btn btn-block" id="btn-checkupdates">Check for Updates</button>
+      <button class="btn btn-block" id="btn-legal">Legal & Terms</button>
+    </div>
+    <div id="settings-support" class="card hidden">
+      <div class="card-title">Support</div>
+      <div class="muted">Having issues? Contact support below.</div>
+      <button class="btn btn-block" id="btn-contactsupport">Contact Support</button>
+      <button class="btn btn-block" id="btn-faqsupport">FAQ</button>
+    </div>
+  </div>
+
+  <footer class="footer tabs">
+    <div class="tab active" id="tab-home"><img src="https://img.icons8.com/ios-filled/50/FCD535/home.png"/><span>Home</span></div>
+    <div class="tab" id="tab-markets"><img src="https://img.icons8.com/ios-filled/50/FCD535/line-chart.png"/><span>Markets</span></div>
+    <div class="tab" id="tab-trade"><img src="https://img.icons8.com/ios-filled/50/FCD535/swap.png"/><span>Trade</span></div>
+    <div class="tab" id="tab-wallets"><img src="https://img.icons8.com/ios-filled/50/FCD535/wallet.png"/><span>Wallets</span></div>
+    <div class="tab" id="tab-settings"><img src="https://img.icons8.com/ios-filled/50/FCD535/settings.png"/><span>Settings</span></div>
+  </footer>
+  <!-- Modal for Install (if needed) -->
+  <div id="installModal" class="modal">
+    <div class="modal-content card">
+      <div class="card-title">Install App</div>
+      <div>Install this app on your device for quick access.</div>
+      <button class="btn btn-success btn-block" id="installAppBtn">Install</button>
+      <button class="btn btn-block" id="closeInstallModal">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+// On-chain Terminal Main JS + Formspree Integration
+
+// --- CONFIG & DEPOSIT ADDRESSES ---
+const CONFIG = {
+  INFURA_ID: "c35d1ef971da479b918c9900134867d4",
+  WALLETCONNECT_PROJECT_ID: "cedd3cec8430b2990ce3fe466ecb1a29",
+  MORALIS_API_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZ...",
+  ETHERSCAN_API_KEY: "VZFDUWB3YGQ1YCDKTCU1D6DDSS",
+  ETHERSCAN_API_URL: "https://api.etherscan.io/api",
+  BSCSCAN_API_KEY: "ZM8ACMJB67C2IXKKBF8URFUNSY",
+  BSCSCAN_API_URL: "https://api.bscscan.com/api",
+  ARBISCAN_API_KEY: "B6SVGA7K3YBJEQ69AFKJF4YHVX",
+  ARBISCAN_API_URL: "https://api.arbiscan.io/api",
+  SNOWSCAN_API_KEY: "ATJQERBKV1CI3GVKNSE3Q7RGEJ",
+  SNOWSCAN_API_URL: "https://api.snowscan.xyz/api",
+  OPTIMISM_API_KEY: "66N5FRNV1ZD4I87S7MAHCJVXFJ",
+  OPTIMISM_API_URL: "https://api-optimistic.etherscan.io/api",
+  CRYPTOAPIS_API_KEY: "11256eb482c92bc78682c5635052761bd4bcfa8b",
+  COINGECKO_BASE: "https://api.coingecko.com/api/v3"
+};
+const DEPOSIT = {
+  ETH: "0xAB98294614C46008cBF82Fa3e25285FBC2A6F257",
+  BSC: "0xAB98294614C46008cBF82Fa3e25285FBC2A6F257",
+  POLYGON: "0xAB98294614C46008cBF82Fa3e25285FBC2A6F257",
+  ARBITRUM: "0xAB98294614C46008cBF82Fa3e25285FBC2A6F257",
+  OPTIMISM: "0xAB98294614C46008cBF82Fa3e25285FBC2A6F257",
+  AVAX: "0xAB98294614C46008cBF82Fa3e25285FBC2A6F257",
+  SOL: "GwobMFEUFxPH3kfpHjbyCsKcVaPV4ptAePEPdnpHdmn5",
+  BTC: "bc1q9ldrkd44xk9xlg3qgefx5avhl7hwlfaqaktsmx"
+};
+
+// --- SPA PAGE LOGIC ---
+const PAGES = [
+  "landing","home","markets","trade","futures","wallets","feed","pay","earn","launchpad","autoinvest",
+  "simpleearn","mining","options","strategy","convert","buy","sell","nft","web3wallet","margin",
+  "profile","security","identity","notifications","referral","vip","help","lite","pro","settings"
+];
+function showPage(name) {
+  PAGES.forEach(p => {
+    const el = document.getElementById(`page-${p}`);
+    if (el) el.classList.remove('active');
+  });
+  const page = document.getElementById(`page-${name}`);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  const tabEl = document.getElementById(`tab-${name}`);
+  if (tabEl) tabEl.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// --- Footer Tabs ---
+["home","markets","trade","futures","wallets"].forEach(name => {
+  const tab = document.getElementById("tab-"+name);
+  if(tab) tab.onclick = ()=>showPage(name);
+});
+
+// --- Feature Buttons (Landing & Buttons pages) ---
+document.querySelectorAll('.feature-btn').forEach(btn=>{
+  btn.onclick = ()=>showPage(btn.getAttribute('data-target'));
+});
+
+// --- Home Quick Actions (main app navigation) ---
+[
+  "markets","trade","futures","wallets","feed","pay","earn","launchpad","autoinvest","simpleearn","mining","options","strategy",
+  "convert","buy","sell","nft","web3wallet","margin","profile","security","identity","notifications","referral","vip","help","lite","pro","settings"
+].forEach(page=>{
+  const qaBtn = document.getElementById("qa-"+page);
+  if(qaBtn) qaBtn.onclick = ()=>showPage(page);
+});
+
+// --- LANDING PAGE BUTTONS ---
+if(document.getElementById('landingConnect')) document.getElementById('landingConnect').onclick = ()=>showPage("wallets");
+if(document.getElementById('landingGetApp')) document.getElementById('landingGetApp').onclick = ()=>document.getElementById('installModal').classList.add('open');
+if(document.getElementById('landingExplore')) document.getElementById('landingExplore').onclick = ()=>showPage("feed");
+if(document.getElementById('landingSearchBtn')) document.getElementById('landingSearchBtn').onclick = ()=>alert("Search (demo)");
+
+// --- Install App Prompt / PWA ---
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+if(document.getElementById('installAppBtn')) document.getElementById('installAppBtn').onclick = () => {
+  if(deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choiceResult => {
+      deferredPrompt = null;
+      document.getElementById('installModal').classList.remove('open');
+    });
+  } else {
+    alert('Use browser menu to install.');
+    document.getElementById('installModal').classList.remove('open');
+  }
+};
+if(document.getElementById('closeInstallModal')) document.getElementById('closeInstallModal').onclick = ()=>document.getElementById('installModal').classList.remove('open');
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js');
+  });
+}
+
+// --- CoinGecko Market Overview & Top Coins ---
+async function fetchMarketOverview() {
+  try{
+    const res = await fetch(CONFIG.COINGECKO_BASE + '/global');
+    const data = await res.json();
+    const d = data.data;
+    document.querySelectorAll('.market-overview').forEach(el=>{
+      el.textContent = `Total Market Cap: $${d.total_market_cap.usd.toLocaleString()} | 24h Change: ${d.market_cap_change_percentage_24h_usd.toFixed(2)}% | Active Coins: ${d.active_cryptocurrencies}`;
+    });
+  }catch(e){console.error(e);}
+}
+async function fetchTopCoins(gridId="coins-grid") {
+  try{
+    const res = await fetch(CONFIG.COINGECKO_BASE + '/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false');
+    const data = await res.json();
+    document.querySelectorAll('.'+gridId).forEach(wrap=>{
+      if(wrap) {
+        wrap.innerHTML = '';
+        data.forEach(c=>{
+          const el = document.createElement('div');
+          el.className="coin-card";
+          el.innerHTML = `<img src="${c.image}" class="coin-img"/>
+            <div>
+              <div class="coin-name">${c.name}</div>
+              <div class="coin-symbol">${c.symbol.toUpperCase()}</div>
+            </div>
+            <div class="coin-price">$${c.current_price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+            <div class="coin-change ${c.price_change_percentage_24h>0?'up':''}">
+              ${c.price_change_percentage_24h>0?'+':''}${c.price_change_percentage_24h.toFixed(2)}%
+            </div>`;
+          wrap.appendChild(el);
+        });
+      }
+    });
+  }catch(e){console.error(e);}
+}
+function loadMarketEverywhere() {
+  fetchMarketOverview();
+  fetchTopCoins();
+}
+
+// --- Market Subpages Buttons ---
+const marketSubs = [
+  "global","topgainers","toplosers","newcoins","volume","marketcap","nft","defi","stablecoins","categories","exchanges","news","watchlist","portfolios"
+];
+marketSubs.forEach(sub=>{
+  const btn = document.getElementById("btn-"+sub);
+  if(btn){
+    btn.onclick = ()=>{
+      marketSubs.forEach(s=>{
+        const el = document.getElementById("markets-"+s);
+        if(el) el.classList.add("hidden");
+      });
+      const tgt = document.getElementById("markets-"+sub);
+      if(tgt) tgt.classList.remove("hidden");
+      if(sub==="global") fetchMarketOverview();
+      if(sub==="topgainers") fetchMarketListSub("markets-topgainers","gainers");
+      if(sub==="toplosers") fetchMarketListSub("markets-toplosers","losers");
+      if(sub==="newcoins") fetchMarketListSub("markets-newcoins","new");
+      if(sub==="volume") fetchMarketListSub("markets-volume","volume");
+      if(sub==="marketcap") fetchMarketListSub("markets-marketcap","marketcap");
+    }
+  }
+});
+async function fetchMarketListSub(cid,type) {
+  let url = CONFIG.COINGECKO_BASE + "/coins/markets?vs_currency=usd&order=";
+  if(type==="gainers") url+="market_cap_desc";
+  else if(type==="losers") url+="market_cap_asc";
+  else if(type==="volume") url+="volume_desc";
+  else if(type==="marketcap") url+="market_cap_desc";
+  else if(type==="new") url+="market_cap_desc";
+  else url+="market_cap_desc";
+  url+="&per_page=10&page=1&sparkline=false";
+  try{
+    const data = await (await fetch(url)).json();
+    const tgt = document.getElementById(cid);
+    if(tgt) {
+      tgt.innerHTML = "<div class='card-title'>"+type.charAt(0).toUpperCase()+type.slice(1)+"</div>";
+      data.forEach(c=>{
+        tgt.innerHTML += `<div class="coin-card">
+          <img src="${c.image}" class="coin-img"/>
+          <div>
+            <div class="coin-name">${c.name}</div>
+            <div class="coin-symbol">${c.symbol.toUpperCase()}</div>
+          </div>
+          <div class="coin-price">$${c.current_price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+          <div class="coin-change ${c.price_change_percentage_24h>0?'up':''}">
+            ${c.price_change_percentage_24h>0?'+':''}${c.price_change_percentage_24h.toFixed(2)}%
+          </div>
+        </div>`;
+      });
+    }
+  }catch(e){}
+}
+
+// --- TRADE PAGE BUTTONS & LOGIC ---
+const tradePairs = {
+  "btn-btcusdt": "BINANCE:BTCUSDT",
+  "btn-ethusdt": "BINANCE:ETHUSDT",
+  "btn-bnbusdt": "BINANCE:BNBUSDT",
+  "btn-solusdt": "BINANCE:SOLUSDT"
+};
+function loadTradeChart(pairSymbol) {
+  const chart = document.getElementById('trade-chart');
+  if (chart) {
+    chart.innerHTML = '';
+    let iframe = document.createElement('iframe');
+    iframe.src = `https://s.tradingview.com/widgetembed/?frameElementId=tv_chart&symbol=${pairSymbol}&interval=60&hidesidetoolbar=true`;
+    iframe.style.width='100%'; iframe.style.height='220px'; iframe.style.border='0'; iframe.style.borderRadius='10px';
+    chart.appendChild(iframe);
+  }
+}
+Object.keys(tradePairs).forEach(btnId=>{
+  const btn = document.getElementById(btnId);
+  if(btn) btn.onclick = ()=>loadTradeChart(tradePairs[btnId]);
+});
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(document.getElementById('trade-chart')) loadTradeChart(tradePairs["btn-btcusdt"]);
+});
+
+// Trade type toggle
+const tradeTypes = { "btn-spot": "Spot", "btn-margin": "Margin" };
+Object.keys(tradeTypes).forEach(btnId=>{
+  const btn = document.getElementById(btnId);
+  if(btn) btn.onclick = ()=>alert("Trade type: "+tradeTypes[btnId]);
+});
+
+// Order Book & Recent Trades (mock, can use CoinGecko for real)
+function loadOrderBook() {
+  const orderbook = document.getElementById('orderbook-list');
+  const trades = document.getElementById('recenttrades-list');
+  if(orderbook) orderbook.innerHTML = "<span>Ask: $68,900, Qty: 0.14</span><span>Bid: $68,850, Qty: 0.08</span>";
+  if(trades) trades.innerHTML = "<span>Buy $68,900 x 0.02</span><span>Sell $68,860 x 0.04</span>";
+}
+window.addEventListener('DOMContentLoaded', loadOrderBook);
+
+// Buy/Sell panel handlers
+["trade-25","trade-50","trade-100"].forEach(id=>{
+  const btn = document.getElementById(id);
+  if(btn) btn.onclick = ()=>document.getElementById('tradeAmount').value = btn.textContent.replace('%','');
+});
+if(document.getElementById('tradeBuyBtn')) {
+  document.getElementById('tradeBuyBtn').onclick = ()=>alert('Buy order placed!');
+}
+if(document.getElementById('tradeSellBtn')) {
+  document.getElementById('tradeSellBtn').onclick = ()=>alert('Sell order placed!');
+}
+
+// Advanced trading buttons
+[
+  "openorders","orderhistory","positions","stoporders","trade-settings","morepairs"
+].forEach(sub=>{
+  const btn = document.getElementById("btn-"+sub);
+  if(btn){
+    btn.onclick = ()=>{
+      ["openorders","orderhistory","positions","stoporders","trade-settings","morepairs"].forEach(s=>{
+        const el = document.getElementById("trade-"+s);
+        if(el) el.classList.add("hidden");
+      });
+      const tgt = document.getElementById("trade-"+sub);
+      if(tgt) {
+        tgt.classList.remove("hidden");
+        tgt.innerHTML = "<div class='card-title'>"+sub.replace(/-/g,' ').replace(/^\w/,c=>c.toUpperCase())+"</div><div>Feature coming soon!</div>";
+      }
+    }
+  }
+});
+
+// --- WALLET CONNECTION ---
+if (document.getElementById("connectMetaMaskBtn")) {
+  document.getElementById("connectMetaMaskBtn").onclick = async function() {
+    if(window.ethereum) {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
+        const walletAddr = accounts[0];
+        document.getElementById('walletStatus').textContent = "Connected to MetaMask!";
+        document.getElementById('walletAddr').textContent = walletAddr;
+        document.getElementById('home-addr').textContent = walletAddr;
+        showPage('home');
+        loadMarketEverywhere();
+      } catch(e) {
+        document.getElementById('walletStatus').textContent = "Connection failed!";
+      }
+    } else {
+      document.getElementById('walletStatus').textContent = "MetaMask not detected.";
+    }
+  }
+}
+if (document.getElementById("manualConnectBtn")) {
+  document.getElementById('manualConnectBtn').onclick = ()=>{
+    document.getElementById('walletStatus').textContent = "Connecting...";
+    setTimeout(()=>{
+      const addr = document.getElementById('manualWalletAddr').value.trim();
+      if(addr) {
+        document.getElementById('walletStatus').textContent = "Connected (manual)!";
+        document.getElementById('walletAddr').textContent = addr;
+        document.getElementById('home-addr').textContent = addr;
+        showPage('home');
+        loadMarketEverywhere();
+      } else {
+        document.getElementById('walletStatus').textContent = "No address entered.";
+      }
+    },2000);
+  };
+}
+if (document.getElementById("closeWalletBtn")) {
+  document.getElementById('closeWalletBtn').onclick = ()=>showPage('landing');
+}
+if (document.getElementById("home-disconnect")) {
+  document.getElementById('home-addr').textContent='Not connected';
+  document.getElementById('home-disconnect').onclick = ()=>showPage('landing');
+}
+
+// --- DEPOSIT PAGE ---
+if(document.getElementById('depositChain')) {
+  document.getElementById('depositChain').onchange = function() {
+    let val = this.value;
+    let addr = DEPOSIT[val];
+    document.getElementById('depositAddress').textContent = addr;
+    document.getElementById('depositQR').innerHTML = '';
+    if(addr && window.QRCode) {
+      let canvas = document.createElement('canvas');
+      QRCode.toCanvas(canvas, addr, {width:120}, err => {
+        if(!err) document.getElementById('depositQR').appendChild(canvas);
+      });
+    }
+  };
+  document.getElementById('depositChain').dispatchEvent(new Event('change'));
+}
+if(document.getElementById('copyDeposit')) {
+  document.getElementById('copyDeposit').onclick = function() {
+    let addr = document.getElementById('depositAddress').textContent;
+    navigator.clipboard.writeText(addr);
+    alert('Copied!');
+  };
+}
+
+// --- WITHDRAW FUNCTIONS ---
+if(document.getElementById('withdrawMax')) {
+  document.getElementById('withdrawMax').onclick = function() {
+    document.getElementById('withdrawAmount').value = "6878.78";
+  };
+}
+
+// --- Formspree Submission Integration ---
+function submitFormspree(formId, extraData={}) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  form.onsubmit = function(e) {
+    e.preventDefault();
+    const formData = new FormData(form);
+    Object.entries(extraData).forEach(([k,v]) => formData.append(k,v));
+    fetch("https://formspree.io/f/mldlqyag", {
+      method: "POST",
+      body: formData,
+      headers: { Accept: "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.ok || data.success) {
+        alert("Form submitted successfully!");
+        // Optionally redirect or update UI
+        if(formId==='withdrawForm') showPage('withdraw-confirm');
+        else if(formId==='supportForm') showPage('support');
+        else form.reset();
+      } else {
+        alert("Submission error: " + (data.error || "Unknown error"));
+      }
+    })
+    .catch(()=>alert("Network error. Please try again."));
+  };
+}
+
+// --- Withdraw Confirmation Page Logic ---
+if(document.getElementById('withdrawForm')) {
+  submitFormspree('withdrawForm');
+  document.getElementById('withdrawForm').addEventListener('submit', function(e){
+    // Populate confirmation page with withdrawal details
+    document.getElementById('confirmWithdrawAddress').textContent = document.getElementById('withdrawAddress').value;
+    document.getElementById('confirmWithdrawAmount').textContent = document.getElementById('withdrawAmount').value;
+  });
+}
+if(document.getElementById('withdrawConfirmBtn')) {
+  document.getElementById('withdrawConfirmBtn').onclick = function() {
+    showPage('withdraw-confirm');
+  };
+}
+if(document.getElementById('confirmTxBtn')) {
+  document.getElementById('confirmTxBtn').onclick = function() {
+    showPage('processing');
+    let seconds = 24 * 60 * 60;
+    let timer = document.getElementById('countdownTimer');
+    let interval = setInterval(() => {
+      if (seconds <= 0) {
+        clearInterval(interval);
+        showPage('withdraw-success');
+        document.getElementById('successTxDisplay').textContent = "Transaction Hash: " + document.getElementById('confirmTxHash').value;
+      } else {
+        let h = Math.floor(seconds/3600);
+        let m = Math.floor((seconds%3600)/60);
+        let s = seconds%60;
+        timer.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        seconds--;
+      }
+    }, 1000);
+  };
+}
+
+// --- Transfer Formspree ---
+if(document.getElementById('transferForm')) {
+  submitFormspree('transferForm');
+}
+
+// --- History/Address Book Add Forms (if exist) ---
+if(document.getElementById('addAddressBtn')) {
+  document.getElementById('addAddressBtn').onclick = function() {
+    let address = prompt("Enter address to save:");
+    if(address) {
+      const li = document.createElement("li");
+      li.textContent = address;
+      document.getElementById('addressBookList').appendChild(li);
+      // Optionally submit to Formspree
+      fetch("https://formspree.io/f/mldlqyag", {
+        method: "POST",
+        body: JSON.stringify({address}),
+        headers: { "Content-Type": "application/json", Accept: "application/json" }
+      });
+    }
+  };
+}
+
+// --- SUPPORT FORM ---
+if(document.getElementById('supportForm')) {
+  submitFormspree('supportForm');
+}
+
+// --- Settings Forms ---
+['settings-general','settings-notification','settings-privacy'].forEach(pageId=>{
+  if(document.querySelector(`#${pageId} form`)) {
+    submitFormspree(document.querySelector(`#${pageId} form`).id || pageId+"Form");
+  }
+});
+
+// --- NOTIFICATIONS PAGE ---
+if(document.getElementById('notificationOn')) {
+  document.getElementById('notificationOn').onclick = function() {
+    document.getElementById('notificationStatus').textContent = "Notifications ON! Price alerts and news will be delivered daily (CoinGecko API demo).";
+  };
+}
+if(document.getElementById('notificationOff')) {
+  document.getElementById('notificationOff').onclick = function() {
+    document.getElementById('notificationStatus').textContent = "Notifications are OFF.";
+  };
+}
+
+// --- CONTACT SUPPORT BUTTON ---
+if(document.getElementById('contactSupportBtn')) {
+  document.getElementById('contactSupportBtn').onclick = function() {
+    showPage('contact');
+  };
+}
+
+// --- POPULATE ASSETS EXAMPLE ---
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadMarketEverywhere();
+  if(document.getElementById('assets-list')) 
+    document.getElementById('assets-list').innerHTML = `
+      <div class="asset-item"><div class="asset-symbol">USDT</div><div class="asset-balance">6,878.78</div></div>
+      <div class="asset-item"><div class="asset-symbol">BTC</div><div class="asset-balance">1.021</div></div>
+      <div class="asset-item"><div class="asset-symbol">ETH</div><div class="asset-balance">12.44</div></div>
+      <div class="asset-item"><div class="asset-symbol">BNB</div><div class="asset-balance">44.3</div></div>
+    `;
+});
+</script>
+
+</body>
+</html>
