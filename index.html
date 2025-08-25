@@ -1476,17 +1476,6 @@ document.querySelectorAll('.feature-btn').forEach(btn=>{
     tab.onclick = () => {
       // Hide all pages
       document.querySelectorAll(".page").forEach(pg => pg.classList.add("hidden"));
-
-      // Show landing page
-      const landingPage = document.getElementById("landing-page");
-      if (landingPage) landingPage.classList.remove("hidden");
-
-      // Scroll to Connect Wallet button
-      const connectBtn = document.getElementById("btn-connect-wallet");
-      if (connectBtn) {
-        connectBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-        connectBtn.classList.add("highlight-connect"); // optional visual cue
-      }
 });
 // --- LANDING PAGE BUTTONS ---
 if(document.getElementById('landingConnect')) document.getElementById('landingConnect').onclick = ()=>showPage("wallets");
