@@ -1,0 +1,21 @@
+{
+  "name": "On-chain Terminal",
+  "short_name": "ONT",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#181A20",
+  "theme_color": "#181A20",
+  "description": "Web3 market, wallet and trading terminal.",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
