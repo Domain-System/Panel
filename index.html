@@ -1461,13 +1461,6 @@ document.querySelectorAll('.feature-btn').forEach(btn=>{
   const qaBtn = document.getElementById("qa-"+page);
   if(qaBtn) qaBtn.onclick = ()=>showPage(page);
 });
-// --- Footer Tabs (before wallet connect, redirect to landing connect wallet) ---
-["home","markets","trade","wallets","settings"].forEach(name => {
-  const tab = document.getElementById("tab-" + name);
-  if (tab) {
-    tab.onclick = gotoConnectWalletBtn;
-    
-});
 // --- LANDING PAGE BUTTONS ---
 if(document.getElementById('landingConnect')) document.getElementById('landingConnect').onclick = ()=>showPage("wallets");
 if(document.getElementById('landingGetApp')) document.getElementById('landingGetApp').onclick = ()=>document.getElementById('installModal').classList.add('open');
