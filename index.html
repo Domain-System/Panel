@@ -216,33 +216,51 @@ input:focus, select:focus, textarea:focus { border: 1.5px solid var(--accent); }
 .asset-actions { display: flex; gap: 7px; }
 
 /* Coin Cards */
-.market-title, .top-coins-title { 
-  margin: 20px 0 10px; 
-  font-weight: bold; 
-  font-size: 18px; 
-  color: #fff; 
+.coins-list, .markets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.coins-list { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
+.coin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-size: 14px;
+  color: #fff;
 }
 
-.coin-row { 
-  display: flex; 
-  justify-content: space-between; 
-  font-size: 15px; 
-  padding: 6px 0; 
-  border-bottom: 1px solid rgba(255,255,255,0.1); 
-  color: #fff; 
+.coin-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.coin-symbol { font-weight: 600; width: 60px; }
-.coin-price { flex: 1; text-align: right; color: var(--muted, #B7BDC6); }
-.coin-change { width: 60px; text-align: right; font-weight: 500; }
-.text-green { color: var(--success, #0ECB81); }
-.text-red { color: var(--danger, #F6465D); }
+.coin-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.coin-symbol {
+  font-weight: 600;
+}
+
+.coin-price {
+  flex: 1;
+  text-align: right;
+  color: var(--muted, #B7BDC6);
+}
+
+.coin-change {
+  width: 60px;
+  text-align: right;
+  font-weight: 500;
+}
+.coin-change.up { color: var(--success, #0ECB81); }
+.coin-change.down { color: var(--danger, #F6465D); }
 /* Order Book & Panel */
 .orderbook-box {
   background: var(--input-bg);
@@ -293,12 +311,7 @@ li { margin-bottom: 5px; }
 <body>
 <div class="app">
   <header>
-    <div class="header-logo">
-      <img src="https://placehold.co/40x40/333333/FFFFFF?text=OC" alt="Onchain Logo"/>
-      <span class="header-title">Onchain Terminal</span>
-     </div>
-      
-    <div class="header-btns">
+   <div class="header-btns">
       <!-- Search -->
       <button class="header-btn" id="hdrSearchBtn" title="Search">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1492,21 +1505,27 @@ async function fetchMarketOverview() {
   } catch (e) { console.error(e); }
 }
 
-async function fetchTopCoins(listClass = "coins-grid") {
+async function fetchTopCoins(listClass = "coins-list") {
   try {
-    const res = await fetch(CONFIG.COINGECKO_BASE + '/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false');
+    const res = await fetch(
+      CONFIG.COINGECKO_BASE + '/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false'
+    );
     const data = await res.json();
-    document.querySelectorAll('.' + listClass).forEach(wrap => {
+
+    document.querySelectorAll("." + listClass).forEach(wrap => {
       if (wrap) {
         wrap.innerHTML = '';
         data.forEach(c => {
-          const el = document.createElement('div');
+          const el = document.createElement("div");
           el.className = "coin-row";
           el.innerHTML = `
-            <span class="coin-symbol">${c.symbol.toUpperCase()}</span>
-            <span class="coin-price">$${c.current_price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
-            <span class="coin-change ${c.price_change_percentage_24h >= 0 ? 'up' : 'down'}">
-              ${c.price_change_percentage_24h >= 0 ? '+' : ''}${c.price_change_percentage_24h.toFixed(2)}%
+            <div class="coin-left">
+              <img src="${c.image}" class="coin-img"/>
+              <span class="coin-symbol">${c.symbol.toUpperCase()}</span>
+            </div>
+            <span class="coin-price">$${c.current_price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+            <span class="coin-change ${c.price_change_percentage_24h>=0 ? 'up' : 'down'}">
+              ${c.price_change_percentage_24h>=0 ? '+' : ''}${c.price_change_percentage_24h.toFixed(2)}%
             </span>
           `;
           wrap.appendChild(el);
@@ -1519,7 +1538,7 @@ async function fetchTopCoins(listClass = "coins-grid") {
 function loadMarketEverywhere() {
   fetchMarketOverview();
   fetchTopCoins();
-  // Auto-refresh every 2 minutes
+  // auto-refresh every 2 minutes
   setInterval(() => {
     fetchMarketOverview();
     fetchTopCoins();
@@ -1528,10 +1547,9 @@ function loadMarketEverywhere() {
 
 // --- Market Subpages Buttons ---
 const marketSubs = [
-  "global", "topgainers", "toplosers", "newcoins", "volume", "marketcap",
-  "nft", "defi", "stablecoins", "categories", "exchanges", "news", "watchlist", "portfolios"
+  "global","topgainers","toplosers","newcoins","volume","marketcap",
+  "nft","defi","stablecoins","categories","exchanges","news","watchlist","portfolios"
 ];
-
 marketSubs.forEach(sub => {
   const btn = document.getElementById("btn-" + sub);
   if (btn) {
@@ -1542,6 +1560,7 @@ marketSubs.forEach(sub => {
       });
       const tgt = document.getElementById("markets-" + sub);
       if (tgt) tgt.classList.remove("hidden");
+
       if (sub === "global") fetchMarketOverview();
       if (sub === "topgainers") fetchMarketListSub("markets-topgainers", "gainers");
       if (sub === "toplosers") fetchMarketListSub("markets-toplosers", "losers");
@@ -1561,6 +1580,7 @@ async function fetchMarketListSub(cid, type) {
   else if (type === "new") url += "market_cap_desc";
   else url += "market_cap_desc";
   url += "&per_page=10&page=1&sparkline=false";
+
   try {
     const data = await (await fetch(url)).json();
     const tgt = document.getElementById(cid);
@@ -1569,17 +1589,20 @@ async function fetchMarketListSub(cid, type) {
       data.forEach(c => {
         tgt.innerHTML += `
           <div class="coin-row">
-            <span class="coin-symbol">${c.symbol.toUpperCase()}</span>
-            <span class="coin-price">$${c.current_price.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
-            <span class="coin-change ${c.price_change_percentage_24h >= 0 ? 'up' : 'down'}">
-              ${c.price_change_percentage_24h >= 0 ? '+' : ''}${c.price_change_percentage_24h.toFixed(2)}%
+            <div class="coin-left">
+              <img src="${c.image}" class="coin-img"/>
+              <span class="coin-symbol">${c.symbol.toUpperCase()}</span>
+            </div>
+            <span class="coin-price">$${c.current_price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+            <span class="coin-change ${c.price_change_percentage_24h>=0 ? 'up' : 'down'}">
+              ${c.price_change_percentage_24h>=0?'+':''}${c.price_change_percentage_24h.toFixed(2)}%
             </span>
           </div>
         `;
       });
     }
   } catch (e) { console.error(e); }
-}
+    }
 
 // --- TRADE PAGE BUTTONS & LOGIC ---
 const tradePairs = {
