@@ -296,14 +296,6 @@ hr { border: none; border-top: 1px solid #23262F; margin: 14px 0; }
 ul, ol { margin: 8px 0 8px 18px; }
 li { margin-bottom: 5px; }
 .feature-btn { margin-bottom: 10px; }
-.highlight-connect {
-  animation: pulse 1s infinite;
-}
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
 /* Responsive */
 @media (max-width: 520px) {
   .card { max-width: 98vw; }
@@ -1473,9 +1465,8 @@ document.querySelectorAll('.feature-btn').forEach(btn=>{
 ["home","markets","trade","wallets","settings"].forEach(name => {
   const tab = document.getElementById("tab-" + name);
   if (tab) {
-    tab.onclick = () => {
-      // Hide all pages
-      document.querySelectorAll(".page").forEach(pg => pg.classList.add("hidden"));
+    tab.onclick = gotoConnectWalletBtn;
+    
 });
 // --- LANDING PAGE BUTTONS ---
 if(document.getElementById('landingConnect')) document.getElementById('landingConnect').onclick = ()=>showPage("wallets");
